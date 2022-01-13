@@ -177,16 +177,18 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 
     public void startCluster() throws ClusterEntrypointException {
         LOG.info("Starting {}.", getClass().getSimpleName());
-
+        System.out.println("Starting "+getClass().getSimpleName());
         try {
             FlinkSecurityManager.setFromConfiguration(configuration);
             PluginManager pluginManager =
                     PluginUtils.createPluginManagerFromRootFolder(configuration);
+            System.out.println("configureFileSystems");
             configureFileSystems(configuration, pluginManager);
-
+            System.out.println("installSecurityContext");
             SecurityContext securityContext = installSecurityContext(configuration);
 
             ClusterEntrypointUtils.configureUncaughtExceptionHandler(configuration);
+            System.out.println("runCluster");
             securityContext.runSecured(
                     (Callable<Void>)
                             () -> {
@@ -231,15 +233,25 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 
     private SecurityContext installSecurityContext(Configuration configuration) throws Exception {
         LOG.info("Install security context.");
-
+        System.out.println("Install security context."+configuration);
         SecurityUtils.install(new SecurityConfiguration(configuration));
 
         return SecurityUtils.getInstalledContext();
     }
 
+    /**
+     * 这个方法主要做两件事
+     * 1、initializeServices() 初始化相关服务
+     * 2、dispatcherResourceManagerComponentFactory.create() 启动Dispatcher和ResourceManager服务
+     */
     private void runCluster(Configuration configuration, PluginManager pluginManager)
             throws Exception {
         synchronized (lock) {
+            /**
+             * 初始化服务，如JobManager的RPC服务，HA服务，心跳检查服务，metric service
+             * 这些服务都 是Master节点要使用到的一些服务
+             *
+             */
             initializeServices(configuration, pluginManager);
 
             // write host information into configuration
@@ -296,6 +308,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
         synchronized (lock) {
             rpcSystem = RpcSystem.load(configuration);
 
+            // 基于Akka的RpcService实现。RPC服务启动Akka参与者来接收从RpcGateWay调用RPC
             commonRpcService =
                     RpcUtils.createRemoteRpcService(
                             rpcSystem,
@@ -310,12 +323,15 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
             // update the configuration used to create the high availability services
             configuration.setString(JobManagerOptions.ADDRESS, commonRpcService.getAddress());
             configuration.setInteger(JobManagerOptions.PORT, commonRpcService.getPort());
-
+            // 初始化一个ioExecutor
             ioExecutor =
                     Executors.newFixedThreadPool(
                             ClusterEntrypointUtils.getPoolSize(configuration),
                             new ExecutorThreadFactory("cluster-io"));
+
+            //
             haServices = createHaServices(configuration, ioExecutor, rpcSystem);
+
             blobServer = new BlobServer(configuration, haServices.createBlobStore());
             blobServer.start();
             heartbeatServices = createHeartbeatServices(configuration);
@@ -614,6 +630,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
 
         final String clusterEntrypointName = clusterEntrypoint.getClass().getSimpleName();
         try {
+            System.out.println("启动集群");
             clusterEntrypoint.startCluster();
         } catch (ClusterEntrypointException e) {
             LOG.error(
@@ -621,6 +638,8 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
                     e);
             System.exit(STARTUP_FAILURE_RETURN_CODE);
         }
+
+        LOG.info("------------------------吴福强 wufuqiang----------------------");
 
         int returnCode;
         Throwable throwable = null;

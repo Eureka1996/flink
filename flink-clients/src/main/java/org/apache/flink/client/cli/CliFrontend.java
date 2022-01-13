@@ -1109,7 +1109,9 @@ public class CliFrontend {
         }
     }
 
-    /** Submits the job based on the arguments. */
+    /** Submits the job based on the arguments.
+     * ./flink run的入口
+     * */
     public static void main(final String[] args) {
         EnvironmentInformation.logEnvironmentInfo(LOG, "Command Line Client", args);
 

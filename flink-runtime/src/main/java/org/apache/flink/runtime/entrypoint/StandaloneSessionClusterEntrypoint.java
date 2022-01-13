@@ -41,9 +41,12 @@ public class StandaloneSessionClusterEntrypoint extends SessionClusterEntrypoint
 
     public static void main(String[] args) {
         // startup checks and logging
+        LOG.info("吴福强");
+        System.out.println("吴福强");
         EnvironmentInformation.logEnvironmentInfo(
                 LOG, StandaloneSessionClusterEntrypoint.class.getSimpleName(), args);
         SignalHandler.register(LOG);
+
         JvmShutdownSafeguard.installAsShutdownHook(LOG);
 
         final EntrypointClusterConfiguration entrypointClusterConfiguration =
@@ -51,11 +54,12 @@ public class StandaloneSessionClusterEntrypoint extends SessionClusterEntrypoint
                         args,
                         new EntrypointClusterConfigurationParserFactory(),
                         StandaloneSessionClusterEntrypoint.class);
+        System.out.println(2);
         Configuration configuration = loadConfiguration(entrypointClusterConfiguration);
 
         StandaloneSessionClusterEntrypoint entrypoint =
                 new StandaloneSessionClusterEntrypoint(configuration);
-
+        System.out.println(1);
         ClusterEntrypoint.runClusterEntrypoint(entrypoint);
     }
 }

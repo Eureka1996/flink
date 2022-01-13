@@ -54,7 +54,9 @@ public class SecurityUtils {
      */
     public static void install(SecurityConfiguration config) throws Exception {
         // Install the security modules first before installing the security context
+        System.out.println("install Modules");
         installModules(config);
+        System.out.println("install Context");
         installContext(config);
     }
 
@@ -66,14 +68,18 @@ public class SecurityUtils {
             SecurityModuleFactory moduleFactory = null;
             try {
                 moduleFactory = SecurityFactoryServiceLoader.findModuleFactory(moduleFactoryClass);
+                System.out.println("moduleFactory");
             } catch (NoMatchSecurityFactoryException ne) {
                 LOG.error("Unable to instantiate security module factory {}", moduleFactoryClass);
                 throw new IllegalArgumentException("Unable to find module factory class", ne);
             }
+            System.out.println("createModule");
             SecurityModule module = moduleFactory.createModule(config);
+            System.out.println("module is null:"+ (module == null));
             // can be null if a SecurityModule is not supported in the current environment
             if (module != null) {
                 module.install();
+                System.out.println("modules.add(module)");
                 modules.add(module);
             }
         }
