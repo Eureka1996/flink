@@ -40,6 +40,8 @@ import java.io.Serializable;
  * the timer service, timer callbacks are also guaranteed not to be called concurrently with methods
  * on {@code StreamOperator}.
  *
+ * StreamOperator定义了对一个具体的算子的生命周期的管理。
+ *
  * @param <OUT> The output type of the operator
  */
 @PublicEvolving
@@ -122,6 +124,8 @@ public interface StreamOperator<OUT> extends CheckpointListener, KeyContext, Ser
 
     /**
      * Called to draw a state snapshot from the operator.
+     *
+     * 状态管理
      *
      * @return a runnable future to the state handle that points to the snapshotted state. For
      *     synchronous implementations, the runnable might already be finished.

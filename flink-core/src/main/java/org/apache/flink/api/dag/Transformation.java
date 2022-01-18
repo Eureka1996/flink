@@ -99,6 +99,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * <p>The information about partitioning, union, split/select end up being encoded in the edges that
  * connect the sources to the map operation.
  *
+ * 每一个DataStream的底层都有对应的一个Transformation。
+ *
  * @param <T> The type of the elements that result from this {@code Transformation}
  */
 @Internal

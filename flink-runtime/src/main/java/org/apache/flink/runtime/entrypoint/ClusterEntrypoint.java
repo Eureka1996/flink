@@ -255,9 +255,10 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
             initializeServices(configuration, pluginManager);
 
             // write host information into configuration
+            // 将jobmanager地址写入配置
             configuration.setString(JobManagerOptions.ADDRESS, commonRpcService.getAddress());
             configuration.setInteger(JobManagerOptions.PORT, commonRpcService.getPort());
-
+            // 内部初始化了三大工厂实例
             final DispatcherResourceManagerComponentFactory
                     dispatcherResourceManagerComponentFactory =
                             createDispatcherResourceManagerComponentFactory(configuration);
@@ -329,12 +330,14 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
                             ClusterEntrypointUtils.getPoolSize(configuration),
                             new ExecutorThreadFactory("cluster-io"));
 
-            //
+            // 提供对高可用性所需要的所有服务的访问注册，分布式计数器和领导人选举
             haServices = createHaServices(configuration, ioExecutor, rpcSystem);
-
+            // 负责监听传入的请求生成线程来处理这些请求。它还负责创建要存储的目录结构blob或临时缓存它们
             blobServer = new BlobServer(configuration, haServices.createBlobStore());
             blobServer.start();
+            // 提供心跳所需要的所有服务，这包括创建心跳接收器和心跳发送者
             heartbeatServices = createHeartbeatServices(configuration);
+            // 跟踪所有已注册的Metric，它作为连接MetricGroup和MetricReporter
             metricRegistry = createMetricRegistry(configuration, pluginManager, rpcSystem);
 
             final RpcService metricQueryServiceRpcService =

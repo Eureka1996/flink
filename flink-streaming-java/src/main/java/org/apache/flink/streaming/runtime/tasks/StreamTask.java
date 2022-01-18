@@ -174,6 +174,8 @@ import static org.apache.flink.util.concurrent.FutureUtils.assertNoException;
  * StreamOperator} must be synchronized on this lock object to ensure that no methods are called
  * concurrently.
  *
+ * StreamTask是所有流式任务的基础类
+ *
  * @param <OUT>
  * @param <OP>
  */

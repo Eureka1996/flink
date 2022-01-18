@@ -1037,13 +1037,13 @@ under the License.
 								<skip>true</skip>
 							</configuration>
 						</plugin>
-						<plugin>
-							<groupId>com.diffplug.spotless</groupId>
-							<artifactId>spotless-maven-plugin</artifactId>
-							<configuration>
-								<skip>true</skip>
-							</configuration>
-						</plugin>
+<!--						<plugin>-->
+<!--							<groupId>com.diffplug.spotless</groupId>-->
+<!--							<artifactId>spotless-maven-plugin</artifactId>-->
+<!--							<configuration>-->
+<!--								<skip>true</skip>-->
+<!--							</configuration>-->
+<!--						</plugin>-->
 						<plugin>
 							<groupId>org.scalastyle</groupId>
 							<artifactId>scalastyle-maven-plugin</artifactId>
@@ -1530,10 +1530,10 @@ under the License.
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
 			</plugin>
-			<plugin>
-				<groupId>com.diffplug.spotless</groupId>
-				<artifactId>spotless-maven-plugin</artifactId>
-			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>com.diffplug.spotless</groupId>-->
+<!--				<artifactId>spotless-maven-plugin</artifactId>-->
+<!--			</plugin>-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -1889,35 +1889,35 @@ under the License.
 					</configuration>
 				</plugin>
 
-				<plugin>
-					<groupId>com.diffplug.spotless</groupId>
-					<artifactId>spotless-maven-plugin</artifactId>
-					<version>${spotless.version}</version>
-					<configuration>
-						<java>
-							<googleJavaFormat>
-								<version>1.7</version>
-								<style>AOSP</style>
-							</googleJavaFormat>
+<!--				<plugin>-->
+<!--					<groupId>com.diffplug.spotless</groupId>-->
+<!--					<artifactId>spotless-maven-plugin</artifactId>-->
+<!--					<version>${spotless.version}</version>-->
+<!--					<configuration>-->
+<!--						<java>-->
+<!--							<googleJavaFormat>-->
+<!--								<version>1.7</version>-->
+<!--								<style>AOSP</style>-->
+<!--							</googleJavaFormat>-->
 
-							<!-- \# refers to the static imports -->
-							<importOrder>
-								<order>org.apache.flink,org.apache.flink.shaded,,javax,java,scala,\#</order>
-							</importOrder>
+<!--							&lt;!&ndash; \# refers to the static imports &ndash;&gt;-->
+<!--							<importOrder>-->
+<!--								<order>org.apache.flink,org.apache.flink.shaded,,javax,java,scala,\#</order>-->
+<!--							</importOrder>-->
 
-							<removeUnusedImports />
-						</java>
-					</configuration>
-					<executions>
-						<execution>
-							<id>spotless-check</id>
-							<phase>validate</phase>
-							<goals>
-								<goal>check</goal>
-							</goals>
-						</execution>
-					</executions>
-				</plugin>
+<!--							<removeUnusedImports />-->
+<!--						</java>-->
+<!--					</configuration>-->
+<!--					<executions>-->
+<!--						<execution>-->
+<!--							<id>spotless-check</id>-->
+<!--							<phase>validate</phase>-->
+<!--							<goals>-->
+<!--								<goal>check</goal>-->
+<!--							</goals>-->
+<!--						</execution>-->
+<!--					</executions>-->
+<!--				</plugin>-->
 
 
 				<plugin>

@@ -473,7 +473,8 @@ public class EnvironmentInformation {
         }
     }
 
-    public static String getHadoopVersionString() {
+    public static String
+    getHadoopVersionString() {
         try {
             Class<?> versionInfoClass =
                     Class.forName(

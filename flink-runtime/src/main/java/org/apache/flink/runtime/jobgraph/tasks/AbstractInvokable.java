@@ -50,6 +50,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * #triggerCheckpointOnBarrier(CheckpointMetaData, CheckpointOptions, CheckpointMetricsBuilder)},
  * {@link #abortCheckpointOnBarrier(long, CheckpointException)} and {@link
  * #notifyCheckpointCompleteAsync(long)}.
+ *
+ * AbstractInvokable是所有可以在TaskManager中运行的任务的抽象基础类，包括流式和批任务。
  */
 public abstract class AbstractInvokable
         implements TaskInvokable, CheckpointableTask, CoordinatedTask {

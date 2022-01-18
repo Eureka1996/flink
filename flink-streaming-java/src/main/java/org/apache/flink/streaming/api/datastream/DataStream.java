@@ -122,6 +122,14 @@ import java.util.UUID;
  *   <li>{@link DataStream#filter}
  * </ul>
  *
+ * 一个DataStream就表征了由同一种类型元素构成的数据流。
+ * 通过对DataStream应用map、filter等操作，可以将一个DataStream转换成另一个DataStream，
+ * 这个转换的过程就是根据不同的操作生成不同的Transformation，
+ * 并将其加入StreamExecutionEnvironment的transformations列表中。
+ *
+ * 通过DataStream -> StreamTransformation -> StreamOperator这样的依赖关系，就可以完成DataStream的转换，
+ * 并且保留数据流和应用在流上的算子之间的关系。
+ *
  * @param <T> The type of the elements in this stream.
  */
 @Public
@@ -1193,7 +1201,7 @@ public class DataStream<T> {
 
         // read the output type of the input Transform to coax out errors about MissingTypeInfo
         transformation.getOutputType();
-
+        // 构造Transformation
         OneInputTransformation<T, R> resultTransform =
                 new OneInputTransformation<>(
                         this.transformation,
@@ -1205,7 +1213,7 @@ public class DataStream<T> {
         @SuppressWarnings({"unchecked", "rawtypes"})
         SingleOutputStreamOperator<R> returnStream =
                 new SingleOutputStreamOperator(environment, resultTransform);
-
+        // 加入到StreamExecutionEnvironment的列表中
         getExecutionEnvironment().addOperator(resultTransform);
 
         return returnStream;

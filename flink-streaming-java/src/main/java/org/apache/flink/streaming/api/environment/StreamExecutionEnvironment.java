@@ -171,7 +171,7 @@ public class StreamExecutionEnvironment {
 
     /** Settings that control the checkpointing behavior. */
     private final CheckpointConfig checkpointCfg = new CheckpointConfig();
-
+    // 保存生成DataStream的所有转换
     protected final List<Transformation<?>> transformations = new ArrayList<>();
 
     private long bufferTimeout = ExecutionOptions.BUFFER_TIMEOUT.defaultValue().toMillis();

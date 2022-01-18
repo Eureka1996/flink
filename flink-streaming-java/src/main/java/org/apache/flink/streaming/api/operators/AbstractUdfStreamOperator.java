@@ -42,6 +42,8 @@ import static java.util.Objects.requireNonNull;
  * handles the opening and closing of the user-defined functions, as part of the operator life
  * cycle.
  *
+ * 具体到诸如map、filter等操作对应的StreamOperator，基本都是在AbstractUdfStreamOperator的基础上实现的。
+ *
  * @param <OUT> The output type of the operator
  * @param <F> The type of the user function
  */
@@ -53,7 +55,7 @@ public abstract class AbstractUdfStreamOperator<OUT, F extends Function>
 
     /** The user function. */
     protected final F userFunction;
-
+    // 接收一个用户自定义的处理函数
     public AbstractUdfStreamOperator(F userFunction) {
         this.userFunction = requireNonNull(userFunction);
         checkUdfCheckpointingPreconditions();

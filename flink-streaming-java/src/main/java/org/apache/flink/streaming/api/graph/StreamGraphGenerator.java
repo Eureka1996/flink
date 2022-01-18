@@ -125,6 +125,8 @@ import static org.apache.flink.util.Preconditions.checkState;
  * HashPartition}. This transformation returns the ID 4. Then we transform the {@code Map-3}. We add
  * the edge {@code 4 -> 3}. The {@code StreamGraph} resolved the actual node with ID 1 and creates
  * and edge {@code 1 -> 3} with the property HashPartition.
+ *
+ * StreamGraphGenerator会基于StreamExecutionEnvironment的transformations列表来生成StreamGraph
  */
 @Internal
 public class StreamGraphGenerator {
@@ -650,6 +652,7 @@ public class StreamGraphGenerator {
         resultIds.addAll(inputIds);
 
         // the recursive transform might have already transformed this
+        // 由于是递归调用的，可能已经完成了转换
         if (alreadyTransformed.containsKey(iterate)) {
             return alreadyTransformed.get(iterate);
         }
@@ -695,11 +698,12 @@ public class StreamGraphGenerator {
         for (Transformation<T> feedbackEdge : iterate.getFeedbackEdges()) {
             Collection<Integer> feedbackIds = transform(feedbackEdge);
             allFeedbackIds.addAll(feedbackIds);
+            // 依次连接到上游节点，创建StreamEdge
             for (Integer feedbackId : feedbackIds) {
                 streamGraph.addEdge(feedbackId, itSink.getId(), 0);
             }
         }
-
+        // 确定资源共享组，用户如果没有指定，默认是default
         String slotSharingGroup = determineSlotSharingGroup(null, allFeedbackIds);
         // slot sharing group of iteration node must exist
         if (slotSharingGroup == null) {

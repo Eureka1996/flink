@@ -507,7 +507,7 @@ public class StreamGraph implements Pipeline {
                         operatorFactory,
                         operatorName,
                         vertexClass);
-
+        // 创建StreamNode，这里保存了StreamOperator和vertexClass信息
         streamNodes.put(vertexID, vertex);
 
         return vertex;
@@ -572,7 +572,7 @@ public class StreamGraph implements Pipeline {
             throw new IllegalStateException(
                     "Already has virtual partition node with id " + virtualId);
         }
-
+        // 添加一个虚拟节点，后续添加边的时候会连接到实际的物理节点
         virtualPartitionNodes.put(virtualId, new Tuple3<>(originalId, partitioner, exchangeMode));
     }
 
