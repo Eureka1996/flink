@@ -475,7 +475,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             return deployInternal(
                     clusterSpecification,
                     "Flink per-job cluster",
-                    // Yarn集群入口
+                    // 获取Yarn集群入口类名称
                     getYarnJobClusterEntrypoint(),
                     jobGraph,
                     detached);
@@ -802,6 +802,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         final List<Path> providedLibDirs =
                 Utils.getQualifiedRemoteSharedPaths(configuration, yarnConfiguration);
         // yarn应用的文件上传器：FS、对应的HDFS路径
+        // 用来上传用户jar包，flink的依赖，flink的配置文件等
         final YarnApplicationFileUploader fileUploader =
                 YarnApplicationFileUploader.from(
                         fs,
@@ -828,7 +829,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 
         // ------------------ Add Zookeeper namespace to local flinkConfiguraton ------
         setHAClusterIdIfNotSet(configuration, appId);
-
+        // 判断是否是高可用
         if (HighAvailabilityMode.isHighAvailabilityModeActivated(configuration)) {
             // activate re-execution of failed applications
             appContext.setMaxAppAttempts(
@@ -842,7 +843,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             appContext.setMaxAppAttempts(
                     configuration.getInteger(YarnConfigOptions.APPLICATION_ATTEMPTS.key(), 1));
         }
-
+        // 存放用户jar包
         final Set<Path> userJarFiles = new HashSet<>();
         if (jobGraph != null) {
             userJarFiles.addAll(
@@ -941,6 +942,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         }
 
         // Setup jar for ApplicationMaster
+        // 上传flink的主要依赖，flink-dict-xxx包
         final YarnLocalResourceDescriptor localResourceDescFlinkJar =
                 fileUploader.uploadFlinkDist(flinkJarPath);
         classPathBuilder
@@ -949,6 +951,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 
         // write job graph to tmp file and add it to local resource
         // TODO: server use user main method to generate job graph
+        // 把作业图写入到一个临时文件
         if (jobGraph != null) {
             File tmpJobGraphFile = null;
             try {
@@ -981,6 +984,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 
         // Upload the flink configuration
         // write out configuration file
+        // 上传flink的配置文件，flink-conf.yaml
         File tmpConfigurationFile = null;
         try {
             tmpConfigurationFile = File.createTempFile(appId + "-flink-conf.yaml", null);
@@ -1111,9 +1115,11 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         }
 
         amContainer.setLocalResources(fileUploader.getRegisteredLocalResources());
+        // 上传完毕，关闭上传器
         fileUploader.close();
 
         // Setup CLASSPATH and environment variables for ApplicationMaster
+        // 创建Map，用来存储AM的环境变量和类路径
         final Map<String, String> appMasterEnv = new HashMap<>();
         // set user specified app master environment variables
         appMasterEnv.putAll(
@@ -1159,7 +1165,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 
         // set classpath from YARN configuration
         Utils.setupYarnClassPath(yarnConfiguration, appMasterEnv);
-
+        // 将之前封装的map(AM的环境信息、类路径)，设置到容器里
         amContainer.setEnvironment(appMasterEnv);
 
         // Set up resource type requirements for ApplicationMaster
@@ -1195,6 +1201,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
                 new DeploymentFailureHook(yarnApplication, fileUploader.getApplicationDir());
         Runtime.getRuntime().addShutdownHook(deploymentFailureHook);
         LOG.info("Submitting application master " + appId);
+        // 前面做了很多上传、环境配置，终于可以提交yarn应用
         yarnClient.submitApplication(appContext);
 
         LOG.info("Waiting for the cluster to be allocated");
@@ -1210,6 +1217,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             }
             YarnApplicationState appState = report.getYarnApplicationState();
             LOG.debug("Application State: {}", appState);
+            // 判断Yarn任务的状态
             switch (appState) {
                 case FAILED:
                 case KILLED:
