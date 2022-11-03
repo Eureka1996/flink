@@ -475,6 +475,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             return deployInternal(
                     clusterSpecification,
                     "Flink per-job cluster",
+                    // Yarn集群入口
                     getYarnJobClusterEntrypoint(),
                     jobGraph,
                     detached);
@@ -519,9 +520,9 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             @Nullable JobGraph jobGraph,
             boolean detached)
             throws Exception {
-
+        // 获取当前用户
         final UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
-        if (HadoopUtils.isKerberosSecurityEnabled(currentUser)) {
+        if (HadoopUtils.isKerberosSecurityEnabled(currentUser)) { // 是否开启安全验证
             boolean useTicketCache =
                     flinkConfiguration.getBoolean(SecurityOptions.KERBEROS_LOGIN_USETICKETCACHE);
 
@@ -544,7 +545,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
                                 YarnConfigOptions.YARN_ACCESS.key()));
             }
         }
-
+        // 部署前检查：jar包路径、conf路径、yarn最大核数等
         isReadyForDeployment(clusterSpecification);
 
         // ------------------ Check if the specified queue exists --------------------
@@ -557,11 +558,12 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
         // Create application via yarnClient
         final YarnClientApplication yarnApplication = yarnClient.createApplication();
         final GetNewApplicationResponse appResponse = yarnApplication.getNewApplicationResponse();
-
+        // 获取最大资源容量
         Resource maxRes = appResponse.getMaximumResourceCapability();
 
         final ClusterResourceDescription freeClusterMem;
         try {
+            // 获取当前的集群空闲资源
             freeClusterMem = getCurrentFreeClusterResources(yarnClient);
         } catch (YarnException | IOException e) {
             failSessionDuringDeployment(yarnClient, yarnApplication);
@@ -602,7 +604,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 
         flinkConfiguration.setString(
                 ClusterEntrypoint.INTERNAL_CLUSTER_EXECUTION_MODE, executionMode.toString());
-
+        // 启动AM
         ApplicationReport report =
                 startAppMaster(
                         flinkConfiguration,
@@ -777,7 +779,7 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
             throws Exception {
 
         // ------------------ Initialize the file systems -------------------------
-
+        // 初始化、创建Hadoop的FileSystem
         org.apache.flink.core.fs.FileSystem.initialize(
                 configuration, PluginUtils.createPluginManagerFromRootFolder(configuration));
 
@@ -794,12 +796,12 @@ public class YarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
                             + "specified Hadoop configuration path is wrong and the system is using the default Hadoop configuration values."
                             + "The Flink YARN client needs to store its files in a distributed file system");
         }
-
+        // 应用提交的上下文
         ApplicationSubmissionContext appContext = yarnApplication.getApplicationSubmissionContext();
 
         final List<Path> providedLibDirs =
                 Utils.getQualifiedRemoteSharedPaths(configuration, yarnConfiguration);
-
+        // yarn应用的文件上传器：FS、对应的HDFS路径
         final YarnApplicationFileUploader fileUploader =
                 YarnApplicationFileUploader.from(
                         fs,

@@ -229,20 +229,23 @@ public class CliFrontend {
             CliFrontendParser.printHelpForRun(customCommandLines);
             return;
         }
-
+        // 根据之前添加的顺序，挨个判断是否active: Generic/Yarn/Default
         final CustomCommandLine activeCommandLine =
                 validateAndGetActiveCommandLine(checkNotNull(commandLine));
-
+        // 解析参数
         final ProgramOptions programOptions = ProgramOptions.create(commandLine);
-
+        // 获取Jar包和依赖
         final List<URL> jobJars = getJobJarAndDependencies(programOptions);
 
+        // 获取有效的配置，不同的集群模式会去拿不同的配置。
+        // 获取HA的id、Target(session/per-job)、JobManager内存、TaskManager内存、每个TM的slot数量等
         final Configuration effectiveConfiguration =
                 getEffectiveConfiguration(activeCommandLine, commandLine, programOptions, jobJars);
 
         LOG.debug("Effective executor configuration: {}", effectiveConfiguration);
 
         try (PackagedProgram program = getPackagedProgram(programOptions, effectiveConfiguration)) {
+            // 执行程序
             executeProgram(effectiveConfiguration, program);
         }
     }
@@ -250,6 +253,7 @@ public class CliFrontend {
     /** Get all provided libraries needed to run the program from the ProgramOptions. */
     private List<URL> getJobJarAndDependencies(ProgramOptions programOptions)
             throws CliArgsException {
+        // 获取-c指定的全类名
         String entryPointClass = programOptions.getEntryPointClassName();
         String jarFilePath = programOptions.getJarFilePath();
 
@@ -281,7 +285,7 @@ public class CliFrontend {
             throws FlinkException {
 
         final Configuration effectiveConfiguration = new Configuration(configuration);
-
+        // 通过toConfiguration接口方法，根据不同的集群模式去获取不同的数据
         final Configuration commandLineConfiguration =
                 checkNotNull(activeCustomCommandLine).toConfiguration(commandLine);
 
@@ -1131,6 +1135,7 @@ public class CliFrontend {
             final CliFrontend cli = new CliFrontend(configuration, customCommandLines);
 
             SecurityUtils.install(new SecurityConfiguration(cli.configuration));
+            // 解析参数并运行
             retCode = SecurityUtils.getInstalledContext().runSecured(() -> cli.parseAndRun(args));
         } catch (Throwable t) {
             final Throwable strippedThrowable =

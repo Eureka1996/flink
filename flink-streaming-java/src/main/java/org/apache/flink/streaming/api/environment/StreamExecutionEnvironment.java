@@ -1913,6 +1913,7 @@ public class StreamExecutionEnvironment {
         Preconditions.checkNotNull(jobName, "Streaming Job name should not be null.");
         final StreamGraph streamGraph = getStreamGraph();
         streamGraph.setJobName(jobName);
+        // 获取StreamGraph，并接着执行
         return execute(streamGraph);
     }
 
@@ -1927,6 +1928,7 @@ public class StreamExecutionEnvironment {
      */
     @Internal
     public JobExecutionResult execute(StreamGraph streamGraph) throws Exception {
+        // 执行
         final JobClient jobClient = executeAsync(streamGraph);
 
         try {

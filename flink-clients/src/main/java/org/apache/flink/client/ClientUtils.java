@@ -87,15 +87,17 @@ public enum ClientUtils {
             boolean suppressSysout)
             throws ProgramInvocationException {
         checkNotNull(executorServiceLoader);
+        // 获取类加载器
         final ClassLoader userCodeClassLoader = program.getUserCodeClassLoader();
         final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         try {
+            // 设置类加载器
             Thread.currentThread().setContextClassLoader(userCodeClassLoader);
 
             LOG.info(
                     "Starting program (detached: {})",
                     !configuration.getBoolean(DeploymentOptions.ATTACHED));
-
+            // 配置执行环境的上下文，用户代码里的getExecutionEnvironment就会拿到这些环境信息
             ContextEnvironment.setAsContext(
                     executorServiceLoader,
                     configuration,
