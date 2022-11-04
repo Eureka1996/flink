@@ -205,6 +205,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
     @Override
     public void onStart() throws Exception {
         try {
+            // 启动Dispatcher
             startDispatcherServices();
         } catch (Throwable t) {
             final DispatcherException exception =
@@ -213,7 +214,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
             onFatalError(exception);
             throw exception;
         }
-
+        // 启动JobMaster
         startRecoveredJobs();
         this.dispatcherBootstrap =
                 this.dispatcherBootstrapFactory.create(
@@ -407,6 +408,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
     private void runJob(JobGraph jobGraph, ExecutionType executionType) throws Exception {
         Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
         long initializationTimestamp = System.currentTimeMillis();
+        // 创建JobManager启动器
         JobManagerRunner jobManagerRunner =
                 createJobManagerRunner(jobGraph, initializationTimestamp);
 
@@ -479,6 +481,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
         final RpcService rpcService = getRpcService();
 
         JobManagerRunner runner =
+                // 创建JobMaster
                 jobManagerRunnerFactory.createJobManagerRunner(
                         jobGraph,
                         configuration,
@@ -489,6 +492,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                         new DefaultJobManagerJobMetricGroupFactory(jobManagerMetricGroup),
                         fatalErrorHandler,
                         initializationTimestamp);
+        // 启动JobMaster
         runner.start();
         return runner;
     }
