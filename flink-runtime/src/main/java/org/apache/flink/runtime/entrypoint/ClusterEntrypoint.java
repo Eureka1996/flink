@@ -192,6 +192,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
             securityContext.runSecured(
                     (Callable<Void>)
                             () -> {
+                                // 启动集群
                                 runCluster(configuration, pluginManager);
 
                                 return null;

@@ -131,7 +131,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             DispatcherId::fromUuid,
                             new ExponentialBackoffRetryStrategy(
                                     12, Duration.ofMillis(10), Duration.ofMillis(50)));
-
+            // 网关巡回器
             final LeaderGatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever =
                     new RpcGatewayRetriever<>(
                             rpcService,
@@ -172,7 +172,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
             webMonitorEndpoint.start();
 
             final String hostname = RpcUtils.getHostname(rpcService);
-
+            // 创建resourcemanager
             resourceManagerService =
                     ResourceManagerServiceImpl.create(
                             resourceManagerFactory,
@@ -208,6 +208,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             ioExecutor);
 
             log.debug("Starting Dispatcher.");
+            // 创建并启动dispatcher
             dispatcherRunner =
                     dispatcherRunnerFactory.createDispatcherRunner(
                             highAvailabilityServices.getDispatcherLeaderElectionService(),
@@ -218,6 +219,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             partialDispatcherServices);
 
             log.debug("Starting ResourceManagerService.");
+            // 启动ResourceManager
             resourceManagerService.start();
 
             resourceManagerRetrievalService.start(resourceManagerGatewayRetriever);
