@@ -82,6 +82,7 @@ public class RouterHandler extends SimpleChannelInboundHandler<HttpRequest> {
         }
 
         // Route
+        // 根据HTTP请求信息，在路由列表中查找
         HttpMethod method = httpRequest.getMethod();
         QueryStringDecoder qsd = new QueryStringDecoder(httpRequest.uri());
         RouteResult<?> routeResult = router.route(method, qsd.path(), qsd.parameters());
@@ -93,7 +94,7 @@ public class RouterHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
         routed(channelHandlerContext, routeResult, httpRequest);
     }
-
+    // 根据路由的结果，触发对应的Handler的消息处理
     private void routed(
             ChannelHandlerContext channelHandlerContext,
             RouteResult<?> routeResult,

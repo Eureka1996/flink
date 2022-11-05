@@ -171,10 +171,10 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
                     state == State.CREATED, "The RestServerEndpoint cannot be restarted.");
 
             log.info("Starting rest endpoint.");
-
+            // 新创建一个路由器
             final Router router = new Router();
             final CompletableFuture<String> restAddressFuture = new CompletableFuture<>();
-
+            // 初始化处理外部请求的Handler
             handlers = initializeHandlers(restAddressFuture);
 
             /* sort the handlers such that they are ordered the following:
@@ -184,11 +184,14 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
              * /jobs/:jobid/config
              * /:*
              */
+            // 基于URL进行排序
+            // TODO: 为什么要给handlers排序？
             Collections.sort(handlers, RestHandlerUrlComparator.INSTANCE);
 
             checkAllEndpointsAndHandlersAreUnique(handlers);
+            // 将处理外部请求的Handler注册到路由器(Router)
             handlers.forEach(handler -> registerHandler(router, handler, log));
-
+            // 后续代码包含：创建并启动NettyServer
             ChannelInitializer<SocketChannel> initializer =
                     new ChannelInitializer<SocketChannel>() {
 
@@ -208,10 +211,10 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
                             }
 
                             ch.pipeline()
-                                    .addLast(new HttpServerCodec())
-                                    .addLast(new FileUploadHandler(uploadDir))
+                                    .addLast(new HttpServerCodec()) // 负责HTTP消息的解码与编码
+                                    .addLast(new FileUploadHandler(uploadDir)) // 负责处理文件上传
                                     .addLast(
-                                            new FlinkHttpObjectAggregator(
+                                            new FlinkHttpObjectAggregator(  // 负责将多个HTTP消息组装成一个完整的HTTP请求或者HTTP响应
                                                     maxContentLength, responseHeaders));
 
                             for (InboundChannelHandlerFactory factory :
@@ -224,9 +227,9 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
                             }
 
                             ch.pipeline()
-                                    .addLast(new ChunkedWriteHandler())
-                                    .addLast(handler.getName(), handler)
-                                    .addLast(new PipelineErrorHandler(log, responseHeaders));
+                                    .addLast(new ChunkedWriteHandler()) // 负责大的数据流的处理，比如查看TaskManager、JobManager的日志和标准输出的Handler的处理
+                                    .addLast(handler.getName(), handler) // REST服务暴露的核心，会根据URL路由到正确的Handler进行相应的逻辑处理
+                                    .addLast(new PipelineErrorHandler(log, responseHeaders));// 负责记录异常日志，并返回HTTP异常响应。只有前面五部分因异常情况没有发送HTTP响应，才会执行到PipelineErrorHandler
                         }
                     };
 
@@ -299,7 +302,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
             restAddressFuture.complete(restBaseUrl);
 
             state = State.RUNNING;
-
+            // 包含：1、启动首领选举服务
             startInternal();
         }
     }
@@ -489,7 +492,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
     private String determineProtocol() {
         return isHttpsEnabled() ? "https" : "http";
     }
-
+    // 根据HttpMethod的请求，调用将Handler注册到Router中对应的HttpMethod的列表中。
     private static void registerHandler(
             Router router,
             Tuple2<RestHandlerSpecification, ChannelInboundHandler> specificationHandler,

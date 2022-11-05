@@ -302,14 +302,14 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                 "Received JobGraph submission '{}' ({}).", jobGraph.getName(), jobGraph.getJobID());
 
         try {
-            if (isDuplicateJob(jobGraph.getJobID())) {
+            if (isDuplicateJob(jobGraph.getJobID())) {  // 检查作业是否重复
                 final DuplicateJobSubmissionException exception =
                         isInGloballyTerminalState(jobGraph.getJobID())
                                 ? DuplicateJobSubmissionException.ofGloballyTerminated(
                                         jobGraph.getJobID())
                                 : DuplicateJobSubmissionException.of(jobGraph.getJobID());
                 return FutureUtils.completedExceptionally(exception);
-            } else if (isPartialResourceConfigured(jobGraph)) {
+            } else if (isPartialResourceConfigured(jobGraph)) { // 检查作业是否进行对Task(任务)级别进行资源设置
                 return FutureUtils.completedExceptionally(
                         new JobSubmissionException(
                                 jobGraph.getJobID(),
@@ -382,6 +382,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
         return persistAndRunFuture.handleAsync(
                 (acknowledge, throwable) -> {
                     if (throwable != null) {
+                        // 持久化和运行作业失败，清除作业对应的数据(主要是作业的HA的数据)，存储在Zookeeper和HDFS中
                         cleanUpHighAvailabilityJobData(jobGraph.getJobID());
                         ClusterEntryPointExceptionUtils.tryEnrichClusterEntryPointError(throwable);
                         final Throwable strippedThrowable =
@@ -401,6 +402,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
     }
 
     private void persistAndRunJob(JobGraph jobGraph) throws Exception {
+        // 持久化作业的DAG(JobGraph)
         jobGraphWriter.putJobGraph(jobGraph);
         runJob(jobGraph, ExecutionType.SUBMISSION);
     }
@@ -418,7 +420,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
         final CompletableFuture<CleanupJobState> cleanupJobStateFuture =
                 jobManagerRunner
-                        .getResultFuture()
+                        .getResultFuture() // 对作业的执行情况进行侦听
+                        // 对于一直在正常运行的作业，getResultFuture昌返回值，即不会执行handleAsync方法里的逻辑；
+                        // 当作业运行状态变成终态(作业的终态有:CANCELED,FINISHED,FAILED)，以及JobManager启动或者运行出现异常时，会执行handleAsync方法里的逻辑。
                         .handleAsync(
                                 (jobManagerRunnerResult, throwable) -> {
                                     Preconditions.checkState(

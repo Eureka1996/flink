@@ -232,12 +232,12 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             jobLeaderIdService.start(new JobLeaderIdActionsImpl());
 
             registerMetrics();
-
+            // 启动心跳服务：跟TaskManager,
             startHeartbeatServices();
-
+            // 启动alotManager
             slotManager.start(
                     getFencingToken(), getMainThreadExecutor(), new ResourceActionsImpl());
-
+            // 创建了yarn的RM和AM的客户端，初始化并启动
             initialize();
         } catch (Exception e) {
             handleStartResourceManagerServicesException(e);

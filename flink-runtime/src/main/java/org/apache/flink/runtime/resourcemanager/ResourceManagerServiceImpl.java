@@ -124,7 +124,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
         }
 
         LOG.info("Starting resource manager service.");
-
+        // 包含启动ResourceManager
         leaderElectionService.start(this);
     }
 
@@ -191,6 +191,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
                                 newLeaderSessionID);
 
                         try {
+                            // 包含启动ResourceManager
                             startNewLeaderResourceManager(newLeaderSessionID);
                         } catch (Throwable t) {
                             fatalErrorHandler.onFatalError(
@@ -251,6 +252,7 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
                 .thenComposeAsync(
                         (ignore) -> {
                             synchronized (lock) {
+                                // 包含启动ResourceManager
                                 return startResourceManagerIfIsLeader(newLeaderResourceManager);
                             }
                         },
