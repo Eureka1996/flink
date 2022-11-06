@@ -412,8 +412,10 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
     public static void runTaskManagerProcessSecurely(Configuration configuration) {
         FlinkSecurityManager.setFromConfiguration(configuration);
+        // 插件管理器
         final PluginManager pluginManager =
                 PluginUtils.createPluginManagerFromRootFolder(configuration);
+        // 文件系统初始化
         FileSystem.initialize(configuration, pluginManager);
 
         StateChangelogStorageLoader.initialize(pluginManager);
@@ -427,6 +429,7 @@ public class TaskManagerRunner implements FatalErrorHandler {
 
             exitCode =
                     SecurityUtils.getInstalledContext()
+                            // 以安全的方式执行TaskManager
                             .runSecured(() -> runTaskManager(configuration, pluginManager));
         } catch (Throwable t) {
             throwable = ExceptionUtils.stripException(t, UndeclaredThrowableException.class);

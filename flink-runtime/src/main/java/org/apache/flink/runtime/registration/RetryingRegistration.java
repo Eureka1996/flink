@@ -189,7 +189,7 @@ public abstract class RetryingRegistration<
                                         retryingRegistrationConfiguration.getErrorDelayMillis(),
                                         strippedFailure.getMessage());
                             }
-
+                            // 开始注册
                             startRegistrationLater(
                                     retryingRegistrationConfiguration.getErrorDelayMillis());
                         }
@@ -219,6 +219,7 @@ public abstract class RetryingRegistration<
                     attempt,
                     timeoutMillis);
             CompletableFuture<RegistrationResponse> registrationFuture =
+                    // 调用invoke方法注册
                     invokeRegistration(gateway, fencingToken, timeoutMillis);
 
             // if the registration was successful, let the TaskExecutor know

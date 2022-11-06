@@ -63,7 +63,7 @@ public class YarnTaskExecutorRunner {
         EnvironmentInformation.logEnvironmentInfo(LOG, "YARN TaskExecutor runner", args);
         SignalHandler.register(LOG);
         JvmShutdownSafeguard.installAsShutdownHook(LOG);
-
+        // 通过安全的方式启动TaskManager
         runTaskManagerSecurely(args);
     }
 

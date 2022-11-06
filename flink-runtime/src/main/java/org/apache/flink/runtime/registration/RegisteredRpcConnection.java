@@ -101,10 +101,12 @@ public abstract class RegisteredRpcConnection<
         checkState(
                 !isConnected() && pendingRegistration == null,
                 "The RPC connection is already started");
-
+        // 创建注册对象
         final RetryingRegistration<F, G, S, R> newRegistration = createNewRegistration();
 
         if (REGISTRATION_UPDATER.compareAndSet(this, null, newRegistration)) {
+            // 开始注册，JobMaster向ResourceManager进行注册
+            // 注册成功之后，调用onRegistrationSuccess( )
             newRegistration.startRegistration();
         } else {
             // concurrent start operation
@@ -240,6 +242,7 @@ public abstract class RegisteredRpcConnection<
     // ------------------------------------------------------------------------
 
     private RetryingRegistration<F, G, S, R> createNewRegistration() {
+        // 找ResourceManagerConnection中的generateRegistration
         RetryingRegistration<F, G, S, R> newRegistration = checkNotNull(generateRegistration());
 
         CompletableFuture<RetryingRegistration.RetryingRegistrationResult<G, S, R>> future =

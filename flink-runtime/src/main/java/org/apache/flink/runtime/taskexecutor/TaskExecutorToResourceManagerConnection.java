@@ -148,6 +148,7 @@ public class TaskExecutorToResourceManagerConnection
             this.taskExecutorRegistration = taskExecutorRegistration;
         }
 
+        // 开始注册，调用的是这个方法
         @Override
         protected CompletableFuture<RegistrationResponse> invokeRegistration(
                 ResourceManagerGateway resourceManager,

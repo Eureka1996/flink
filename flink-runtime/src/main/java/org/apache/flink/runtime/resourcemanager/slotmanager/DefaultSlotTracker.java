@@ -82,7 +82,7 @@ public class DefaultSlotTracker implements SlotTracker {
                     slotId);
             removeSlot(slotId);
         }
-
+        // 创建和注册新的slot
         DeclarativeTaskManagerSlot slot =
                 new DeclarativeTaskManagerSlot(slotId, resourceProfile, taskManagerConnection);
         slots.put(slotId, slot);

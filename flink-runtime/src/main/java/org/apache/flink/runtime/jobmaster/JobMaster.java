@@ -884,17 +884,21 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
 
     private void startJobMasterServices() throws Exception {
         try {
+            // 启动心跳服务
             this.taskManagerHeartbeatManager = createTaskManagerHeartbeatManager(heartbeatServices);
             this.resourceManagerHeartbeatManager =
                     createResourceManagerHeartbeatManager(heartbeatServices);
 
             // start the slot pool make sure the slot pool now accepts messages for this leader
+            // 启动slotpool
             slotPoolService.start(getFencingToken(), getAddress(), getMainThreadExecutor());
 
             // job is ready to go, try to establish connection with resource manager
             //   - activate leader retrieval for the resource manager
             //   - on notification of the leader, the connection will be established and
             //     the slot pool will start requesting slots
+            // 与ResourceManager建立连接，slotpool开始请求资源
+            // 找Standalone子类型
             resourceManagerLeaderRetriever.start(new ResourceManagerLeaderListener());
         } catch (Exception e) {
             handleStartJobMasterServicesError(e);
@@ -1011,7 +1015,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
             final String newResourceManagerAddress, final ResourceManagerId resourceManagerId) {
         resourceManagerAddress =
                 createResourceManagerAddress(newResourceManagerAddress, resourceManagerId);
-
+        // 重连接，先关后开
         reconnectToResourceManager(
                 new FlinkException(
                         String.format(
@@ -1084,7 +1088,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
             establishedResourceManagerConnection =
                     new EstablishedResourceManagerConnection(
                             resourceManagerGateway, resourceManagerResourceId);
-
+            // slotpool连接ResourceManager，请求资源
             slotPoolService.connectToResourceManager(resourceManagerGateway);
 
             resourceManagerHeartbeatManager.monitorTarget(
