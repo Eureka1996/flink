@@ -123,7 +123,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  * </ul>
  */
 public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMasterGateway, JobMasterService {
-
+	// JobMaster是申请Slot的流程的发起方
 	/** Default names for Flink's distributed components. */
 	public static final String JOB_MANAGER_NAME = "jobmanager";
 
@@ -152,9 +152,11 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 	private final FatalErrorHandler fatalErrorHandler;
 
 	private final ClassLoader userCodeLoader;
-
+	// SlotPool作为作业执行图在调度时提供Slot功能以及对Slot的生命周期管理，与作业一一对应(一个作业有一个SlotPool实例)
+	// 其实现类为SlotPoolImpl
 	private final SlotPool slotPool;
-
+	// 负责作业执行图(ExecutionGraph)的调度
+	// Scheduler的一个核心逻辑 是为作业的任务调度申请slot
 	private final Scheduler scheduler;
 
 	private final SchedulerNGFactory schedulerNGFactory;
@@ -504,10 +506,10 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 			final ResourceID taskManagerId,
 			final Collection<SlotOffer> slots,
 			final Time timeout) {
-
+		// 检查汇报的TaskExecutor是否已经注册过
 		Tuple2<TaskManagerLocation, TaskExecutorGateway> taskManager = registeredTaskManagers.get(taskManagerId);
 
-		if (taskManager == null) {
+		if (taskManager == null) { // 没有注册过
 			return FutureUtils.completedExceptionally(new Exception("Unknown TaskManager " + taskManagerId));
 		}
 
