@@ -535,16 +535,17 @@ public class SlotPoolImpl implements SlotPool {
 	 */
 	private void tryFulfillSlotRequestOrMakeAvailable(AllocatedSlot allocatedSlot) {
 		Preconditions.checkState(!allocatedSlot.isUsed(), "Provided slot is still in use.");
-
+		// 检查存在资源匹配的待分配Slot请求
 		final PendingRequest pendingRequest = pollMatchingPendingRequest(allocatedSlot);
 
-		if (pendingRequest != null) {
+		if (pendingRequest != null) { // 如果存在
 			log.debug("Fulfilling pending slot request [{}] early with returned slot [{}]",
 				pendingRequest.getSlotRequestId(), allocatedSlot.getAllocationId());
-
+			// 将汇报Slot对应的allocatedSlot添加到已分配的Slot列表中，并将该Slot返回，供作业对应的Task的调度
 			allocatedSlots.add(pendingRequest.getSlotRequestId(), allocatedSlot);
 			pendingRequest.getAllocatedSlotFuture().complete(allocatedSlot);
 		} else {
+			// 如果不存在，则将Slot添加到可用的Slot列表中
 			log.debug("Adding returned slot [{}] to available slots", allocatedSlot.getAllocationId());
 			availableSlots.add(allocatedSlot, clock.relativeTimeMillis());
 		}
@@ -552,7 +553,8 @@ public class SlotPoolImpl implements SlotPool {
 
 	private PendingRequest pollMatchingPendingRequest(final AllocatedSlot slot) {
 		final ResourceProfile slotResources = slot.getResourceProfile();
-
+		// 检查待分配的Slot请求列表pendingRequests和待连接ResourceManager的Slot请求列表中，
+		// 是否存在资源规格匹配的PendingRequest
 		// try the requests sent to the resource manager first
 		for (PendingRequest request : pendingRequests.values()) {
 			if (slotResources.isMatching(request.getResourceProfile())) {
@@ -580,13 +582,13 @@ public class SlotPoolImpl implements SlotPool {
 			Collection<SlotOffer> offers) {
 
 		ArrayList<SlotOffer> result = new ArrayList<>(offers.size());
-
+		// 遍历TaskExecutor汇报上来的Slot信息列表
 		for (SlotOffer offer : offers) {
 			if (offerSlot(
 				taskManagerLocation,
 				taskManagerGateway,
 				offer)) {
-
+				// 最后将成功添加到SlotPool的Slot信息返回给汇报的TaskExecutor
 				result.add(offer);
 			}
 		}
@@ -615,7 +617,7 @@ public class SlotPoolImpl implements SlotPool {
 		// check if this TaskManager is valid
 		final ResourceID resourceID = taskManagerLocation.getResourceID();
 		final AllocationID allocationID = slotOffer.getAllocationId();
-
+		// 检查汇报的TaskExecutor是否在注册的TaskExecutor列表中，如果不在，则该Slot提供失败。
 		if (!registeredTaskManagers.contains(resourceID)) {
 			log.debug("Received outdated slot offering [{}] from unregistered TaskManager: {}",
 					slotOffer.getAllocationId(), taskManagerLocation);
@@ -623,6 +625,7 @@ public class SlotPoolImpl implements SlotPool {
 		}
 
 		// check whether we have already using this slot
+		// 检查汇报Slot的分配ID是否存在于已经添加到SlotPool的Slot列表。
 		AllocatedSlot existingSlot;
 		if ((existingSlot = allocatedSlots.get(allocationID)) != null ||
 			(existingSlot = availableSlots.get(allocationID)) != null) {
@@ -638,6 +641,8 @@ public class SlotPoolImpl implements SlotPool {
 			final SlotID newSlotId = new SlotID(taskManagerLocation.getResourceID(), slotOffer.getSlotIndex());
 
 			if (existingSlotId.equals(newSlotId)) {
+				// 检查SlotPool列表中分配ID与汇报Slot一致的Slot，是否与汇报Slot拥有一样的SlotID。
+				// 是的话则返回该Slot汇报成功，即重复汇报，汇报Slot具有幂等性
 				log.info("Received repeated offer for slot [{}]. Ignoring.", allocationID);
 
 				// return true here so that the sender will get a positive acknowledgement to the retry
@@ -646,10 +651,12 @@ public class SlotPoolImpl implements SlotPool {
 			} else {
 				// the allocation has been fulfilled by another slot, reject the offer so the task executor
 				// will offer the slot to the resource manager
+				// 否则该Slot汇报因分配ID已经被其他Slot占有而失败
 				return false;
 			}
 		}
 
+		// 创建已分配Slot
 		final AllocatedSlot allocatedSlot = new AllocatedSlot(
 			allocationID,
 			taskManagerLocation,
@@ -658,14 +665,17 @@ public class SlotPoolImpl implements SlotPool {
 			taskManagerGateway);
 
 		// check whether we have request waiting for this slot
+		// 从待分配的Slot请求列表匹配同样分配ID的Slot请求
 		PendingRequest pendingRequest = pendingRequests.removeKeyB(allocationID);
 		if (pendingRequest != null) {
 			// we were waiting for this!
 			allocatedSlots.add(pendingRequest.getSlotRequestId(), allocatedSlot);
-
+			// 判断该Slot请求是否已经完成分配
 			if (!pendingRequest.getAllocatedSlotFuture().complete(allocatedSlot)) {
 				// we could not complete the pending slot future --> try to fulfill another pending request
+				// 判断待分配的Slot请求是否已经完成，如果已经完成，将已经添加到SlotPool中的已分配Slot移除
 				allocatedSlots.remove(pendingRequest.getSlotRequestId());
+				// 执行满足其他待分配的Slot请求或者将其添加到可用Slot列表中的逻辑
 				tryFulfillSlotRequestOrMakeAvailable(allocatedSlot);
 			} else {
 				log.debug("Fulfilled slot request [{}] with allocated slot [{}].", pendingRequest.getSlotRequestId(), allocationID);
@@ -675,6 +685,7 @@ public class SlotPoolImpl implements SlotPool {
 			// we were actually not waiting for this:
 			//   - could be that this request had been fulfilled
 			//   - we are receiving the slots from TaskManagers after becoming leaders
+			// 调用此方法，来满足其他待分配的Slot请求或者将其添加到可用的Slot列表中
 			tryFulfillSlotRequestOrMakeAvailable(allocatedSlot);
 		}
 

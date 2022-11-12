@@ -35,9 +35,11 @@ public class SlotOffer implements Serializable {
 	private AllocationID allocationId;
 
 	/** Index of the offered slot */
+	// TaskExecutor的Slot中的下标
 	private final int slotIndex;
 
 	/** The resource profile of the offered slot */
+	// Slot对应的资源规格
 	private final ResourceProfile resourceProfile;
 
 	public SlotOffer(final AllocationID allocationID, final int index, final ResourceProfile resourceProfile) {
