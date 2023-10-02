@@ -334,10 +334,12 @@ public class StreamGraphGenerator {
 	private <T> Collection<Integer> transformPartition(PartitionTransformation<T> partition) {
 		Transformation<T> input = partition.getInput();
 		List<Integer> resultIds = new ArrayList<>();
-
+		// 递归对该transformation的直接上游transformation进行转换
+		// 获得直接上游id集合
 		Collection<Integer> transformedIds = transform(input);
 		for (Integer transformedId: transformedIds) {
 			int virtualId = Transformation.getNewNodeId();
+			// 添加一个虚拟分区节点，不会生成StreamNode
 			streamGraph.addVirtualPartitionNode(
 					transformedId, virtualId, partition.getPartitioner(), partition.getShuffleMode());
 			resultIds.add(virtualId);
@@ -639,16 +641,17 @@ public class StreamGraphGenerator {
 	 * wired the inputs to this new node.
 	 */
 	private <IN, OUT> Collection<Integer> transformOneInputTransform(OneInputTransformation<IN, OUT> transform) {
-
+		// 存储这个OneInputTransformation的上游Transformation的id，方便构造边，在这里递归，
+		// 确保所有的上游Transformation都已经转化。
 		Collection<Integer> inputIds = transform(transform.getInput());
 
 		// the recursive call might have already transformed this
 		if (alreadyTransformed.containsKey(transform)) {
 			return alreadyTransformed.get(transform);
 		}
-
+		// 确定共享的Slot组
 		String slotSharingGroup = determineSlotSharingGroup(transform.getSlotSharingGroup(), inputIds);
-
+		// 添加算子到StreamGraph中
 		streamGraph.addOperator(transform.getId(),
 				slotSharingGroup,
 				transform.getCoLocationGroupKey(),
@@ -656,17 +659,17 @@ public class StreamGraphGenerator {
 				transform.getInputType(),
 				transform.getOutputType(),
 				transform.getName());
-
+		// 设置StateKeySelector
 		if (transform.getStateKeySelector() != null) {
 			TypeSerializer<?> keySerializer = transform.getStateKeyType().createSerializer(executionConfig);
 			streamGraph.setOneInputStateKey(transform.getId(), transform.getStateKeySelector(), keySerializer);
 		}
-
+		// 设置并行度、最大并行度
 		int parallelism = transform.getParallelism() != ExecutionConfig.PARALLELISM_DEFAULT ?
 			transform.getParallelism() : executionConfig.getParallelism();
 		streamGraph.setParallelism(transform.getId(), parallelism);
 		streamGraph.setMaxParallelism(transform.getId(), transform.getMaxParallelism());
-
+		// 构造StreamEdge的边，关联上下游StreamNode
 		for (Integer inputId: inputIds) {
 			streamGraph.addEdge(inputId, transform.getId(), 0);
 		}

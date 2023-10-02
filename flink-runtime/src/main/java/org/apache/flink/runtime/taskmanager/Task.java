@@ -537,7 +537,7 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 		// ----------------------------
 		//  Initial State transition
 		// ----------------------------
-		while (true) {
+		while (true) { // 处理Task的状态变化
 			ExecutionState current = this.executionState;
 			if (current == ExecutionState.CREATED) {
 				if (transitionState(ExecutionState.CREATED, ExecutionState.DEPLOYING)) {
@@ -591,7 +591,7 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 			// first of all, get a user-code classloader
 			// this may involve downloading the job's JAR files and/or classes
 			LOG.info("Loading JAR files for task {}.", this);
-
+			// 创建用户自定义的ClassLoader，避免不同Job在相同JVM中执行时的Jar版本冲突
 			userCodeClassLoader = createUserCodeClassloader();
 			final ExecutionConfig executionConfig = serializedExecutionConfig.deserializeValue(userCodeClassLoader);
 
@@ -617,7 +617,7 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 			// ----------------------------------------------------------------
 
 			LOG.info("Registering task at network: {}.", this);
-
+			// 初始化Partition/InputGate，并注册Partition
 			setupPartitionsAndGates(consumableNotifyingPartitionWriters, inputGates);
 
 			for (ResultPartitionWriter partitionWriter : consumableNotifyingPartitionWriters) {
@@ -647,7 +647,7 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 			// ----------------------------------------------------------------
 
 			TaskKvStateRegistry kvStateRegistry = kvStateService.createKvStateTaskRegistry(jobId, getJobVertexId());
-
+			// 初始化用户代码
 			Environment env = new RuntimeEnvironment(
 				jobId,
 				vertexId,
@@ -677,9 +677,11 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 			// Make sure the user code classloader is accessible thread-locally.
 			// We are setting the correct context class loader before instantiating the invokable
 			// so that it is available to the invokable during its entire lifetime.
+			// 设置线程的ClassLoader，避免不同Job的Jar版本冲突
 			executingThread.setContextClassLoader(userCodeClassLoader);
 
 			// now load and instantiate the task's invokable code
+			// 加载业务逻辑执行代码，并赋予RuntimeEnvironment
 			invokable = loadAndInstantiateInvokable(userCodeClassLoader, nameOfInvokableClass, env);
 
 			// ----------------------------------------------------------------
@@ -688,20 +690,25 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 
 			// we must make strictly sure that the invokable is accessible to the cancel() call
 			// by the time we switched to running.
+			// 核心逻辑，启动StreamTask执行
 			this.invokable = invokable;
 
 			// switch to the RUNNING state, if that fails, we have been canceled/failed in the meantime
+			// 从DEPLOYING切换到RUNNING状态
 			if (!transitionState(ExecutionState.DEPLOYING, ExecutionState.RUNNING)) {
 				throw new CancelTaskException();
 			}
 
 			// notify everyone that we switched to running
+			// 通知相关的组件，Task进入Running状态
 			taskManagerActions.updateTaskExecutionState(new TaskExecutionState(jobId, executionId, ExecutionState.RUNNING));
 
 			// make sure the user code classloader is accessible thread-locally
+			// 设置执行线程的ClassLoader
 			executingThread.setContextClassLoader(userCodeClassLoader);
 
 			// run the invokable
+			// 启动业务逻辑的执行，执行线程中循环执行
 			invokable.invoke();
 
 			// make sure, we enter the catch block if the task leaves the invoke() method due
@@ -715,6 +722,8 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 			// ----------------------------------------------------------------
 
 			// finish the produced partitions. if this fails, we consider the execution failed.
+			// 业务逻辑执行完毕
+			// 把尚未写出给下游的数据统一Flush，如果失败的话，Task也会失败
 			for (ResultPartitionWriter partitionWriter : consumableNotifyingPartitionWriters) {
 				if (partitionWriter != null) {
 					partitionWriter.finish();
@@ -723,12 +732,13 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 
 			// try to mark the task as finished
 			// if that fails, the task was canceled/failed in the meantime
+			// Task正常执行完毕，迁移到Finished状态
 			if (!transitionState(ExecutionState.RUNNING, ExecutionState.FINISHED)) {
 				throw new CancelTaskException();
 			}
 		}
 		catch (Throwable t) {
-
+			// 异常处理，取消StreamTask执行，切换状态到Failed，如果无法处理，则报告致命错误
 			// unwrap wrapped exceptions to make stack traces more compact
 			if (t instanceof WrappingRuntimeException) {
 				t = ((WrappingRuntimeException) t).unwrap();
@@ -800,6 +810,7 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 			}
 		}
 		finally {
+			// 释放内存、占用的Cache等，并进入Final状态，停止监控
 			try {
 				LOG.info("Freeing task resources for {} ({}).", taskNameWithSubtask, executionId);
 
@@ -855,13 +866,14 @@ public class Task implements Runnable, TaskActions, PartitionProducerStateProvid
 	@VisibleForTesting
 	public static void setupPartitionsAndGates(
 		ResultPartitionWriter[] producedPartitions, InputGate[] inputGates) throws IOException, InterruptedException {
-
+		// 初始化结果分区
 		for (ResultPartitionWriter partition : producedPartitions) {
 			partition.setup();
 		}
 
 		// InputGates must be initialized after the partitions, since during InputGate#setup
 		// we are requesting partitions
+		// 初始化InputGate，并请求结果分区
 		for (InputGate gate : inputGates) {
 			gate.setup();
 		}

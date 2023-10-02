@@ -713,7 +713,7 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 				LOG.info(String.format("Deploying %s (attempt #%d) to %s", vertex.getTaskNameWithSubtaskIndex(),
 						attemptNumber, getAssignedResourceLocation()));
 			}
-
+			// 创建Task部署描述信息
 			final TaskDeploymentDescriptor deployment = TaskDeploymentDescriptorFactory
 				.fromExecutionVertex(vertex, attemptNumber)
 				.createDeploymentDescriptor(
@@ -724,7 +724,7 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 
 			// null taskRestore to let it be GC'ed
 			taskRestore = null;
-
+			// TaskManager RPC通信接口
 			final TaskManagerGateway taskManagerGateway = slot.getTaskManagerGateway();
 
 			final ComponentMainThreadExecutor jobMasterMainThreadExecutor =
@@ -732,6 +732,8 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 
 			// We run the submission in the future executor so that the serialization of large TDDs does not block
 			// the main thread and sync back to the main thread once submission is completed.
+			// 通过异步回调的方式，调用TaskManagerGateway的RPC通信接口将Task发送给TaskManager，
+			// 避免TDD作业描述信息太大，导致主线程阻塞。
 			CompletableFuture.supplyAsync(() -> taskManagerGateway.submitTask(deployment, rpcTimeout), executor)
 				.thenCompose(Function.identity())
 				.whenCompleteAsync(

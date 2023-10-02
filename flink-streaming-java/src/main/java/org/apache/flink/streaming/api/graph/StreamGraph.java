@@ -446,7 +446,7 @@ public class StreamGraph extends StreamingPlan {
 			List<String> outputNames,
 			OutputTag outputTag,
 			ShuffleMode shuffleMode) {
-
+		// 当上游是sideOutput时，递归调用，并传入sideOutput信息
 		if (virtualSideOutputNodes.containsKey(upStreamVertexID)) {
 			int virtualId = upStreamVertexID;
 			upStreamVertexID = virtualSideOutputNodes.get(virtualId).f0;
@@ -454,7 +454,9 @@ public class StreamGraph extends StreamingPlan {
 				outputTag = virtualSideOutputNodes.get(virtualId).f1;
 			}
 			addEdgeInternal(upStreamVertexID, downStreamVertexID, typeNumber, partitioner, null, outputTag, shuffleMode);
-		} else if (virtualSelectNodes.containsKey(upStreamVertexID)) {
+		}
+		// 当上游是select时，递归调用，并传入select信息
+		else if (virtualSelectNodes.containsKey(upStreamVertexID)) {
 			int virtualId = upStreamVertexID;
 			upStreamVertexID = virtualSelectNodes.get(virtualId).f0;
 			if (outputNames.isEmpty()) {
@@ -462,7 +464,9 @@ public class StreamGraph extends StreamingPlan {
 				outputNames = virtualSelectNodes.get(virtualId).f1;
 			}
 			addEdgeInternal(upStreamVertexID, downStreamVertexID, typeNumber, partitioner, outputNames, outputTag, shuffleMode);
-		} else if (virtualPartitionNodes.containsKey(upStreamVertexID)) {
+		}
+		// 当上游是partition时，递归调用，并传入partitioner信息
+		else if (virtualPartitionNodes.containsKey(upStreamVertexID)) {
 			int virtualId = upStreamVertexID;
 			upStreamVertexID = virtualPartitionNodes.get(virtualId).f0;
 			if (partitioner == null) {
@@ -470,12 +474,15 @@ public class StreamGraph extends StreamingPlan {
 			}
 			shuffleMode = virtualPartitionNodes.get(virtualId).f2;
 			addEdgeInternal(upStreamVertexID, downStreamVertexID, typeNumber, partitioner, outputNames, outputTag, shuffleMode);
-		} else {
+		}
+		// 不是以上逻辑转换的情况，真正构建StreamEdge
+		else {
 			StreamNode upstreamNode = getStreamNode(upStreamVertexID);
 			StreamNode downstreamNode = getStreamNode(downStreamVertexID);
 
 			// If no partitioner was specified and the parallelism of upstream and downstream
 			// operator matches use forward partitioning, use rebalance otherwise.
+			// 没有指定partitioner时，会为其选择forward或者rebalance分区
 			if (partitioner == null && upstreamNode.getParallelism() == downstreamNode.getParallelism()) {
 				partitioner = new ForwardPartitioner<Object>();
 			} else if (partitioner == null) {
@@ -494,7 +501,7 @@ public class StreamGraph extends StreamingPlan {
 			if (shuffleMode == null) {
 				shuffleMode = ShuffleMode.UNDEFINED;
 			}
-
+			// 创建StreamEdge，并将该StreamEdge添加到上游的输出，下游的输入
 			StreamEdge edge = new StreamEdge(upstreamNode, downstreamNode, typeNumber, outputNames, partitioner, outputTag, shuffleMode);
 
 			getStreamNode(edge.getSourceId()).addOutEdge(edge);
@@ -726,6 +733,7 @@ public class StreamGraph extends StreamingPlan {
 	@SuppressWarnings("deprecation")
 	@Override
 	public JobGraph getJobGraph(@Nullable JobID jobID) {
+		// 迭代作业暂时禁用Checkpoint
 		// temporarily forbid checkpointing for iterative jobs
 		if (isIterative() && checkpointConfig.isCheckpointingEnabled() && !checkpointConfig.isForceCheckpointing()) {
 			throw new UnsupportedOperationException(

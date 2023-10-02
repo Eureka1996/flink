@@ -394,7 +394,7 @@ public class JoinedStreams<T1, T2> {
 		 * {@link #with(JoinFunction, TypeInformation)}, method to set an operator-specific parallelism.
 		 */
 		public <T> DataStream<T> apply(JoinFunction<T1, T2, T> function, TypeInformation<T> resultType) {
-			//clean the closure
+			//clean the closure,清除闭包
 			function = input1.getExecutionEnvironment().clean(function);
 
 			coGroupedWindowedStream = input1.coGroup(input2)

@@ -336,7 +336,7 @@ public class CoGroupedStreams<T1, T2> {
 					.map(new Input2Tagger<T1, T2>())
 					.setParallelism(input2.getParallelism())
 					.returns(unionType);
-
+			// 调用union把两个DataStream联合在一起
 			DataStream<TaggedUnion<T1, T2>> unionStream = taggedInput1.union(taggedInput2);
 
 			// we explicitly create the keyed stream to manually pass the key type information in
@@ -353,7 +353,7 @@ public class CoGroupedStreams<T1, T2> {
 			if (allowedLateness != null) {
 				windowedStream.allowedLateness(allowedLateness);
 			}
-
+			// 对WindowedStream执行窗口函数
 			return windowedStream.apply(new CoGroupWindowFunction<T1, T2, T, KEY, W>(function), resultType);
 		}
 
